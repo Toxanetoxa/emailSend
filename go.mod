@@ -1,6 +1,6 @@
 module email-sendler
 
-go 1.22.1
+go 1.22
 
 require (
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
