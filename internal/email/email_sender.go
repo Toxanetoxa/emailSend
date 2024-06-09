@@ -28,7 +28,7 @@ type Message struct {
 // MockEmailSender представляет мок для отправки email.
 type MockEmailSender struct{}
 
-// Send отправляет email.
+// MockSend отправляет email.
 func (m *MockEmailSender) MockSend(to string, subject string, body string) error {
 	fmt.Printf("Email sent to %s with subject %s\n", to, subject)
 	return nil
