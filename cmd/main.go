@@ -2,6 +2,7 @@ package main
 
 import (
 	"email-sendler/internal/email"
+	"email-sendler/internal/testingQue"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -29,6 +30,9 @@ func main() {
 		Password: Password,
 	}
 
+	//fmt.Println(sender)
+	_ = sender
+
 	// Проверка отправки сообщения (РАБОТАЕТ!!!)
 	//err = sender.Send("toxanetoxa@gmail.com", "test 1", "Body 1")
 	//if err != nil {
@@ -37,6 +41,9 @@ func main() {
 	//}
 
 	// TODO нужно реализовать метод создания очереди и добаления в нее сообщений
+	testingQue.TestRedis()
+	testingQue.TestKafka()
+
 	// TODO нужно реализовать метод отправки сообщений из очереди
 	// TODO нужно реализовать метод отправки сообщений из очереди с ограничением по количеству сообщений в единицу времени
 }

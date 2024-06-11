@@ -24,3 +24,11 @@
 Делать покусочно, декомпозировав сначала задачу на более мелкие.
 То есть итеративно, кусок сделан - можно показать. Но кусок должен быть логически завершенным и целостным.
 Например, если не можешь сделать целиком все задание, но можешь сделать отдельные части, которые затем применить в проекте.
+
+```docker network create email-sender```
+```cd docker```
+```docker-compose up -d```
+
+перейти в kafka
+```kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic emailTopic
+```

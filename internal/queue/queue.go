@@ -1,44 +1,48 @@
 package queue
 
 import (
-	"email-sendler/internal/email"
-	"errors"
-	"sync"
+	"email-sendler/internal/kafka"
+	"email-sendler/internal/queueTypes"
+	"email-sendler/internal/rabbitmq"
+	"email-sendler/internal/redis"
+	"fmt"
 )
 
 // Queue представляет интерфейс для работы с очередью сообщений.
-type Queue interface {
-	Enqueue(message email.Message) error
-	Dequeue() (email.Message, error)
+
+// QueueType определяет тип очереди.
+type QueueType int
+
+const (
+	RedisQueueType QueueType = iota
+	KafkaQueueType
+	RabbitMQQueueType
+)
+
+type Factory struct {
 }
 
-// InMemoryQueue представляет простую очередь сообщений в памяти (для тестирования).
-type InMemoryQueue struct {
-	messages []email.Message
-	mutex    sync.Mutex
-}
-
-// NewInMemoryQueue создает новую очередь.
-func NewInMemoryQueue() *InMemoryQueue {
-	return &InMemoryQueue{messages: make([]email.Message, 0)}
-}
-
-// Enqueue добавляет сообщение в очередь.
-func (q *InMemoryQueue) Enqueue(message email.Message) error {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-	q.messages = append(q.messages, message)
-	return nil
-}
-
-// Dequeue извлекает сообщение из очереди.
-func (q *InMemoryQueue) Dequeue() (email.Message, error) {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-	if len(q.messages) == 0 {
-		return email.Message{}, errors.New("queue is empty")
+// CreateQueue создает новую очередь.
+func (f *Factory) CreateQueue(queueType QueueType, config map[string]interface{}) (queueTypes.Queue, error) {
+	switch queueType {
+	case RedisQueueType:
+		return redis.NewRedisQueue(
+			config["addr"].(string),
+			config["password"].(string),
+			config["db"].(int),
+			config["key"].(string),
+		), nil
+	case KafkaQueueType:
+		return kafka.NewKafkaQueue(
+			config["brokers"].([]string),
+			config["topic"].(string),
+		), nil
+	case RabbitMQQueueType:
+		return rabbitmq.NewRabbitMQQueue(
+			config["url"].(string),
+			config["queueName"].(string),
+		)
+	default:
+		return nil, fmt.Errorf("неизвестный тип очереди")
 	}
-	message := q.messages[0]
-	q.messages = q.messages[1:]
-	return message, nil
 }
