@@ -10,8 +10,8 @@ type Sender interface {
 	Send(to string, subject string, body string) error
 }
 
-// RealEmailSender представляет реальный интерфейс для отправки email.
-type RealEmailSender struct {
+// SenderConf представляет реальный интерфейс для отправки email.
+type SenderConf struct {
 	Host     string
 	Port     int
 	Username string
@@ -25,16 +25,10 @@ type Message struct {
 	Body    string
 }
 
-// MockEmailSender представляет мок для отправки email.
-type MockEmailSender struct{}
-
-// MockSend отправляет email.
-func (m *MockEmailSender) MockSend(to string, subject string, body string) error {
-	fmt.Printf("Email sent to %s with subject %s\n", to, subject)
-	return nil
-}
-
-func (r *RealEmailSender) Send(to string, subject string, body string) error {
+// Send метод отправления email.
+// Sender is an interface that defines the contract for sending emails.
+// It requires a Send method that takes a recipient email address, a subject, and a body, all as strings.
+func (r *SenderConf) Send(to string, subject string, body string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", r.Username)
 	m.SetHeader("To", to)
