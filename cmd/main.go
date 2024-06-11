@@ -45,18 +45,22 @@ func main() {
 			Username: Username,
 			Password: Password,
 		}
+		fmt.Println("senderReal send success")
 
 		realQ := queue.NewInMemoryQueue()
 		realDispatcher := dispatcher.NewEmailDispatcher(*senderReal, realQ, 5, time.Minute)
+		fmt.Println("realDispatcher work success")
 
 		err := realQ.Enqueue(email.Message{To: "toxanetoxa@gmail.com", Subject: "Subject 1", Body: "Body 1"})
 		if err != nil {
 			return
 		}
+		fmt.Println("первое сообщение создано и добавлено в очередь")
 		err = realQ.Enqueue(email.Message{To: "toxanetoxa@gmail.com", Subject: "Subject 1", Body: "Body 1"})
 		if err != nil {
 			return
 		}
+		fmt.Println("второе сообщение создано и добавлено в очередь")
 
 		realDispatcher.Start()
 	}

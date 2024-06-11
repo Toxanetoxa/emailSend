@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"email-sendler/internal/email"
 	"email-sendler/internal/queue"
+	"fmt"
 	"time"
 )
 
@@ -24,7 +25,7 @@ func NewEmailDispatcherMock(sender email.MockEmailSender, queue queue.Queue, lim
 	}
 }
 
-// StartMock запускает процесс отправки email.
+// StartMock запускает процесс отправки mock email.
 func (d *EmailDispatcherMock) StartMock() {
 	ticker := time.NewTicker(d.interval)
 	defer ticker.Stop()
@@ -66,6 +67,7 @@ func NewEmailDispatcher(sender email.RealEmailSender, queue queue.Queue, limit i
 
 // Start запускает процесс отправки email.
 func (d *EmailDispatcher) Start() {
+	fmt.Println("Начало отправки")
 	ticker := time.NewTicker(d.interval)
 	defer ticker.Stop()
 	count := 0
@@ -77,6 +79,7 @@ func (d *EmailDispatcher) Start() {
 
 		message, err := d.queue.Dequeue()
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 
