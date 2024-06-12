@@ -3,8 +3,9 @@ package main
 import (
 	"email-sendler/internal/dispatcher"
 	"email-sendler/internal/email"
+	"email-sendler/internal/queue"
 	"email-sendler/internal/queueTypes"
-	"email-sendler/internal/redis"
+	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -40,21 +41,21 @@ func main() {
 		return
 	}
 
-	////--- тестовое сообщение ---
-	msg := email.Message{
-		To:      "toxanetoxa@gmail.com",
-		Subject: "Test1 Subject",
-		Body:    "Test sdfsafdsfsdfdsfsdfdsf",
-	}
+	//////--- тестовое сообщение ---
+	//msg := email.Message{
+	//	To:      "toxanetoxa@gmail.com",
+	//	Subject: "Test1 Subject",
+	//	Body:    "Test sdfsafdsfsdfdsfsdfdsf",
+	//}
 
 	//// ---- Добавление тестового сообщения в очередь Redis---
-	for i := 0; i < 10; i++ {
-		err = redisQue.Enqueue(msg)
-		if err != nil {
-			log.Fatalf("Error enqueuing message: %v", err)
-			return
-		}
-	}
+	//for i := 0; i < 4; i++ {
+	//	err = redisQue.Enqueue(msg)
+	//	if err != nil {
+	//		log.Fatalf("Error enqueuing message: %v", err)
+	//		return
+	//	}
+	//}
 
 	// Создание диспетчера который будет отправлять сообщения из очереди
 	// Реализация с редисом
@@ -72,7 +73,7 @@ func main() {
 	// Блокировка основного потока, чтобы программа не завершалась
 	select {}
 
-	// --- Проверка отправки сообщения (РАБОТАЕТ!!!) ---
+	// --- Проверка отправки сообщения ---
 	//err = sender.Send("toxanetoxa@gmail.com", "test 1", "Body 1")
 	//if err != nil {
 	//	log.Fatalf("Error sending email: %v", err)
@@ -91,12 +92,12 @@ func CreateRedisQue() (queueTypes.Queue, error) {
 	RedisHost := os.Getenv("REDIS_HOST")
 	RedisPort := os.Getenv("REDIS_PORT")
 	RedisPassword := os.Getenv("REDIS_PASSWORD")
+	RedisKey := os.Getenv("REDIS_KEY_PREFIX")
 	RedisDB, err := strconv.Atoi(os.Getenv("REDIS_DB"))
 	if err != nil {
 		log.Fatalf("%v. Error converting REDIS_DB to int: %v", op, err)
 		return nil, err
 	}
-	RedisKey := os.Getenv("REDIS_KEY_PREFIX")
 
 	redisConfig := map[string]interface{}{
 		"addr":     RedisHost + ":" + RedisPort,
@@ -105,12 +106,13 @@ func CreateRedisQue() (queueTypes.Queue, error) {
 		"key":      RedisKey,
 	}
 
-	redisQue := redis.NewRedisQueue(
-		redisConfig["addr"].(string),
-		redisConfig["password"].(string),
-		redisConfig["db"].(int),
-		redisConfig["key"].(string),
-	)
+	factory := &queue.Factory{}
+	redisQueue, err := factory.CreateQueue(queue.RedisQueueType, redisConfig)
+	if err != nil {
+		log.Fatalf("%v. Error creating Redis queue: %v", op, err)
+		return nil, err
+	}
 
-	return redisQue, nil
+	fmt.Println("Successfully created Redis queue: \n", redisQueue)
+	return redisQueue, nil
 }
