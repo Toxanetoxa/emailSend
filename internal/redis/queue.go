@@ -8,9 +8,9 @@ import (
 )
 
 type Queue struct {
-	client *redis.Client
-	ctx    context.Context
-	key    string
+	Client *redis.Client
+	Ctx    context.Context
+	Key    string
 }
 
 func NewRedisQueue(addr string, password string, db int, key string) queueTypes.Queue {
@@ -21,9 +21,9 @@ func NewRedisQueue(addr string, password string, db int, key string) queueTypes.
 	})
 
 	return &Queue{
-		client: rdb,
-		ctx:    context.Background(),
-		key:    key,
+		Client: rdb,
+		Ctx:    context.Background(),
+		Key:    key,
 	}
 }
 
@@ -33,11 +33,11 @@ func (q *Queue) Enqueue(message email.Message) error {
 		return err
 	}
 
-	return q.client.RPush(q.ctx, q.key, data).Err()
+	return q.Client.RPush(q.Ctx, q.Key, data).Err()
 }
 
 func (q *Queue) Dequeue() (email.Message, error) {
-	data, err := q.client.LPop(q.ctx, q.key).Result()
+	data, err := q.Client.LPop(q.Ctx, q.Key).Result()
 	if err != nil {
 		return email.Message{}, err
 	}
@@ -48,10 +48,4 @@ func (q *Queue) Dequeue() (email.Message, error) {
 	}
 
 	return *msg, nil
-
-	//result, err := q.client.RPop(q.ctx, q.key).Result()
-	//if errors.Is(err, redis.Nil) {
-	//	return email.Message{}, nil // Очередь пуста
-	//}
-	//return email.Message{Body: result}, err
 }

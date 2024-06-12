@@ -40,6 +40,7 @@ func (d *EmailDispatcher) Start() {
 		}
 
 		message, err := d.queue.Dequeue()
+		//fmt.Print(message)
 		if err != nil {
 			fmt.Printf("%v. Error Dequeue message: %v \n", op, err)
 			continue
@@ -51,6 +52,11 @@ func (d *EmailDispatcher) Start() {
 			count++
 		} else {
 			fmt.Printf("%v. Error sending email: %v \n", op, err)
+		}
+
+		// Проверка, если очередь пуста
+		if message == (email.Message{}) {
+			break
 		}
 	}
 }
