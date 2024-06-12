@@ -4,7 +4,6 @@ import (
 	"context"
 	"email-sendler/internal/email"
 	"email-sendler/internal/queueTypes"
-	"errors"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -14,7 +13,7 @@ type Queue struct {
 	key    string
 }
 
-func NewRedisQueue(addr, password string, db int, key string) queueTypes.Queue {
+func NewRedisQueue(addr string, password string, db int, key string) queueTypes.Queue {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
@@ -29,13 +28,30 @@ func NewRedisQueue(addr, password string, db int, key string) queueTypes.Queue {
 }
 
 func (q *Queue) Enqueue(message email.Message) error {
-	return q.client.LPush(q.ctx, q.key, message.Body).Err()
+	data, err := message.Serialize()
+	if err != nil {
+		return err
+	}
+
+	return q.client.RPush(q.ctx, q.key, data).Err()
 }
 
 func (q *Queue) Dequeue() (email.Message, error) {
-	result, err := q.client.RPop(q.ctx, q.key).Result()
-	if errors.Is(err, redis.Nil) {
-		return email.Message{}, nil // Очередь пуста
+	data, err := q.client.LPop(q.ctx, q.key).Result()
+	if err != nil {
+		return email.Message{}, err
 	}
-	return email.Message{Body: result}, err
+
+	msg, err := email.Deserialize([]byte(data))
+	if err != nil {
+		return email.Message{}, err
+	}
+
+	return *msg, nil
+
+	//result, err := q.client.RPop(q.ctx, q.key).Result()
+	//if errors.Is(err, redis.Nil) {
+	//	return email.Message{}, nil // Очередь пуста
+	//}
+	//return email.Message{Body: result}, err
 }

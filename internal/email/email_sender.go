@@ -1,6 +1,7 @@
 package email
 
 import (
+	"encoding/json"
 	"fmt"
 	"gopkg.in/gomail.v2"
 )
@@ -20,14 +21,27 @@ type SenderConf struct {
 
 // Message представляет структуру email сообщения.
 type Message struct {
-	To      string
-	Subject string
-	Body    string
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+}
+
+// Serialize сериализует сообщение в JSON.
+func (m *Message) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+// Deserialize десериализует JSON в сообщение.
+func Deserialize(data []byte) (*Message, error) {
+	var msg Message
+	err := json.Unmarshal(data, &msg)
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
 }
 
 // Send метод отправления email.
-// Sender is an interface that defines the contract for sending emails.
-// It requires a Send method that takes a recipient email address, a subject, and a body, all as strings.
 func (r *SenderConf) Send(to string, subject string, body string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", r.Username)

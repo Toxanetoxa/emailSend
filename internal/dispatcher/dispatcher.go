@@ -2,7 +2,7 @@ package dispatcher
 
 import (
 	"email-sendler/internal/email"
-	"email-sendler/internal/queue"
+	"email-sendler/internal/queueTypes"
 	"fmt"
 	"time"
 )
@@ -10,13 +10,13 @@ import (
 // EmailDispatcher отвечает за отправку real email из очереди.
 type EmailDispatcher struct {
 	sender   email.Sender
-	queue    queue.Queue
+	queue    queueTypes.Queue
 	limit    int
 	interval time.Duration
 }
 
 // NewEmailDispatcher создает новый EmailDispatcher.
-func NewEmailDispatcher(sender email.Sender, queue queue.Queue, limit int, interval time.Duration) *EmailDispatcher {
+func NewEmailDispatcher(sender email.Sender, queue queueTypes.Queue, limit int, interval time.Duration) *EmailDispatcher {
 	return &EmailDispatcher{
 		sender:   sender,
 		queue:    queue,
@@ -27,6 +27,8 @@ func NewEmailDispatcher(sender email.Sender, queue queue.Queue, limit int, inter
 
 // Start запускает процесс отправки email.
 func (d *EmailDispatcher) Start() {
+	const op = "EmailDispatcher.Start"
+
 	fmt.Println("Начало отправки")
 	ticker := time.NewTicker(d.interval)
 	defer ticker.Stop()
@@ -39,12 +41,16 @@ func (d *EmailDispatcher) Start() {
 
 		message, err := d.queue.Dequeue()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("%v. Error Dequeue message: %v \n", op, err)
 			continue
 		}
 
+		fmt.Printf("Отправка сообщения: %+v\n", message)
+
 		if err := d.sender.Send(message.To, message.Subject, message.Body); err == nil {
 			count++
+		} else {
+			fmt.Printf("%v. Error sending email: %v \n", op, err)
 		}
 	}
 }

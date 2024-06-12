@@ -14,10 +14,11 @@ type Queue struct {
 }
 
 func NewKafkaQueue(brokers []string, topic string) queueTypes.Queue {
-	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: brokers,
-		Topic:   topic,
-	})
+	writer := &kafka.Writer{
+		Addr:     kafka.TCP(brokers...),
+		Topic:    topic,
+		Balancer: &kafka.LeastBytes{},
+	}
 
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: brokers,
