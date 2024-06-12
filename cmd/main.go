@@ -41,25 +41,35 @@ func main() {
 	}
 
 	////--- тестовое сообщение ---
-	//msg := email.Message{
-	//	To:      "toxanetoxa@gmail.com",
-	//	Subject: "Test1 Subject",
-	//	Body:    "Test sdfsafdsfsdfdsfsdfdsf",
-	//}
-	//
+	msg := email.Message{
+		To:      "toxanetoxa@gmail.com",
+		Subject: "Test1 Subject",
+		Body:    "Test sdfsafdsfsdfdsfsdfdsf",
+	}
+
 	//// ---- Добавление тестового сообщения в очередь Redis---
-	//for i := 0; i < 10; i++ {
-	//	err = redisQue.Enqueue(msg)
-	//	if err != nil {
-	//		log.Fatalf("Error enqueuing message: %v", err)
-	//		return
-	//	}
-	//}
+	for i := 0; i < 10; i++ {
+		err = redisQue.Enqueue(msg)
+		if err != nil {
+			log.Fatalf("Error enqueuing message: %v", err)
+			return
+		}
+	}
 
 	// Создание диспетчера который будет отправлять сообщения из очереди
 	// Реализация с редисом
 	emailDispatcher := dispatcher.NewEmailDispatcher(sender, redisQue, 10, time.Second)
-	go emailDispatcher.Start()
+
+	// Канал для остановки диспетчера
+	stopChan := make(chan struct{})
+	go emailDispatcher.Start(stopChan)
+	// Пример остановки диспетчера через 10 секунд
+	go func() {
+		time.Sleep(10 * time.Second)
+		close(stopChan)
+	}()
+
+	// Блокировка основного потока, чтобы программа не завершалась
 	select {}
 
 	// --- Проверка отправки сообщения (РАБОТАЕТ!!!) ---

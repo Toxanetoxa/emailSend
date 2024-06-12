@@ -26,7 +26,7 @@ func NewEmailDispatcher(sender email.Sender, queue queueTypes.Queue, limit int, 
 }
 
 // Start запускает процесс отправки email.
-func (d *EmailDispatcher) Start() {
+func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 	const op = "EmailDispatcher.Start"
 
 	fmt.Println("Начало отправки")
@@ -34,29 +34,31 @@ func (d *EmailDispatcher) Start() {
 	defer ticker.Stop()
 	count := 0
 
-	for range ticker.C {
-		if count >= d.limit {
-			count = 0
-		}
+	for {
+		select {
+		case <-ticker.C:
+			if count >= d.limit {
+				fmt.Println("Достигнут лимит отправки")
+				return
+			}
 
-		message, err := d.queue.Dequeue()
-		//fmt.Print(message)
-		if err != nil {
-			fmt.Printf("%v. Error Dequeue message: %v \n", op, err)
-			continue
-		}
+			message, err := d.queue.Dequeue()
+			if err != nil {
+				fmt.Printf("%v. Error Dequeue message: %v \n", op, err)
+				continue
+			}
 
-		fmt.Printf("Отправка сообщения: %+v\n", message)
+			fmt.Printf("Отправка сообщения: %+v\n", message)
 
-		if err := d.sender.Send(message.To, message.Subject, message.Body); err == nil {
-			count++
-		} else {
-			fmt.Printf("%v. Error sending email: %v \n", op, err)
-		}
+			if err := d.sender.Send(message.To, message.Subject, message.Body); err == nil {
+				count++
+			} else {
+				fmt.Printf("%v. Error sending email: %v \n", op, err)
+			}
 
-		// Проверка, если очередь пуста
-		if message == (email.Message{}) {
-			break
+		case <-stopChan:
+			fmt.Println("Stopping dispatcher")
+			return
 		}
 	}
 }
