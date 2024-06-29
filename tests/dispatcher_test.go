@@ -1,6 +1,7 @@
 package tests_test
 
 import (
+	"context"
 	"email-sendler/internal/dispatcher"
 	"email-sendler/internal/email"
 	"testing"
@@ -13,7 +14,7 @@ type MockSender struct {
 	sendCalledCount int
 }
 
-func (m *MockSender) Send(to, subject, body string) error {
+func (m *MockSender) Send(ctx context.Context, to, subject, body string) error {
 	m.sendCalledCount++
 	return nil
 }
@@ -32,6 +33,11 @@ func (m *MockQueue) Dequeue() (email.Message, error) {
 		return email.Message{To: "test@example.com", Subject: "Test", Body: "Test Body"}, nil
 	}
 	return email.Message{}, nil
+}
+
+func (m *MockQueue) Len() int {
+	// Реализация метода Len для тестовых нужд
+	return 0
 }
 
 func TestEmailDispatcher_Start(t *testing.T) {

@@ -42,20 +42,20 @@ func main() {
 	}
 
 	//////--- тестовое сообщение ---
-	//msg := email.Message{
-	//	To:      "toxanetoxa@gmail.com",
-	//	Subject: "Test1 Subject",
-	//	Body:    "Test sdfsafdsfsdfdsfsdfdsf",
-	//}
+	msg := email.Message{
+		To:      "toxanetoxa@gmail.",
+		Subject: "Test1 Subject",
+		Body:    "Test sdfsafdsfsdfdsfsdfdsf",
+	}
 
 	//// ---- Добавление тестового сообщения в очередь Redis---
-	//for i := 0; i < 4; i++ {
-	//	err = redisQue.Enqueue(msg)
-	//	if err != nil {
-	//		log.Fatalf("Error enqueuing message: %v", err)
-	//		return
-	//	}
-	//}
+	for i := 0; i < 4; i++ {
+		err = redisQue.Enqueue(msg)
+		if err != nil {
+			log.Fatalf("Error enqueuing message: %v", err)
+			return
+		}
+	}
 
 	// Создание диспетчера который будет отправлять сообщения из очереди
 	// Реализация с редисом
@@ -113,6 +113,6 @@ func CreateRedisQue() (queueTypes.Queue, error) {
 		return nil, err
 	}
 
-	fmt.Println("Successfully created Redis queue: \n", redisQueue)
+	fmt.Printf("Successfully created Redis queue: %s\n", redisConfig["key"])
 	return redisQueue, nil
 }

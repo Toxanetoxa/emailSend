@@ -4,6 +4,7 @@ import (
 	"context"
 	"email-sendler/internal/email"
 	"email-sendler/internal/queueTypes"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -46,6 +47,11 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 				fmt.Println("Stopping queue reading")
 				return
 			default:
+				if d.queue.Len() == 0 {
+					time.Sleep(1 * time.Second) // Можно добавить задержку перед повторной попыткой
+					continue
+				}
+
 				message, err := d.queue.Dequeue()
 				if err != nil {
 					errChan <- err
@@ -73,7 +79,13 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 			if err := d.sender.Send(ctx, message.To, message.Subject, message.Body); err == nil {
 				count++
 			} else {
-				fmt.Printf("%v. Error sending email: %v \n", op, err)
+				if errors.Is(err, email.ErrInvalidRecipient) {
+					fmt.Printf("%v. Invalid recipient: %v\n", op, err)
+				} else if errors.Is(err, email.ErrSendFailed) {
+					fmt.Printf("%v. Error sending email: %v\n", op, err)
+				} else {
+					fmt.Printf("%v. Unknown error: %v\n", op, err)
+				}
 			}
 
 			cancel()

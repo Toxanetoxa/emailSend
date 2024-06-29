@@ -1,20 +1,16 @@
 package queue
 
 import (
-	"email-sendler/internal/kafka"
 	"email-sendler/internal/queueTypes"
-	"email-sendler/internal/rabbitmq"
 	"email-sendler/internal/redis"
 	"fmt"
 )
 
-// Queue представляет интерфейс для работы с очередью сообщений.
-
-// QueueType определяет тип очереди.
-type QueueType int
+// Type определяет тип очереди.
+type Type int
 
 const (
-	RedisQueueType QueueType = iota
+	RedisQueueType Type = iota
 	KafkaQueueType
 	RabbitMQQueueType
 )
@@ -23,7 +19,7 @@ type Factory struct {
 }
 
 // CreateQueue создает новую очередь.
-func (f *Factory) CreateQueue(queueType QueueType, config map[string]interface{}) (queueTypes.Queue, error) {
+func (f *Factory) CreateQueue(queueType Type, config map[string]interface{}) (queueTypes.Queue, error) {
 	switch queueType {
 	case RedisQueueType:
 		return redis.NewRedisQueue(
@@ -33,15 +29,11 @@ func (f *Factory) CreateQueue(queueType QueueType, config map[string]interface{}
 			config["key"].(string),
 		), nil
 	case KafkaQueueType:
-		return kafka.NewKafkaQueue(
-			config["brokers"].([]string),
-			config["topic"].(string),
-		), nil
+		//TODO реализовать логику для Kafka
+		return nil, fmt.Errorf("реализовать для Kafka")
 	case RabbitMQQueueType:
-		return rabbitmq.NewRabbitMQQueue(
-			config["url"].(string),
-			config["queueName"].(string),
-		)
+		//TODO реализовать логику для rabbitMQ
+		return nil, fmt.Errorf("реализовать для rabbitMQ")
 	default:
 		return nil, fmt.Errorf("неизвестный тип очереди")
 	}
