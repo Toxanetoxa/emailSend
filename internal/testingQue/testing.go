@@ -14,7 +14,7 @@ func TestRedis() {
 	const op = "testingQue.TestRedis"
 
 	redisConfig := map[string]interface{}{
-		"addr":     "127.0.0.1:6379", // Обязательно проверьте, что здесь указан правильный порт
+		"addr":     "127.0.0.1:6379",
 		"password": "",
 		"db":       0,
 		"key":      "emailQueue",
