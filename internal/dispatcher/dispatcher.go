@@ -76,7 +76,7 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 				fmt.Printf("%v. Error sending email: %v \n", op, err)
 			}
 
-			cancel() // Явный вызов cancel() после завершения работы с контекстом
+			cancel()
 
 		case err := <-errChan:
 			fmt.Printf("%v. Error Dequeue message: %v \n", op, err)
