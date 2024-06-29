@@ -1,6 +1,7 @@
 package email
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"gopkg.in/gomail.v2"
@@ -8,7 +9,7 @@ import (
 
 // Sender представляет интерфейс для отправки email.
 type Sender interface {
-	Send(to string, subject string, body string) error
+	Send(ctx context.Context, to string, subject string, body string) error
 }
 
 // SenderConf представляет реальный интерфейс для отправки email.
@@ -42,7 +43,7 @@ func Deserialize(data []byte) (*Message, error) {
 }
 
 // Send метод отправления email.
-func (r *SenderConf) Send(to string, subject string, body string) error {
+func (r *SenderConf) Send(ctx context.Context, to string, subject string, body string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", r.Username)
 	m.SetHeader("To", to)
@@ -51,8 +52,19 @@ func (r *SenderConf) Send(to string, subject string, body string) error {
 
 	d := gomail.NewDialer(r.Host, r.Port, r.Username, r.Password)
 
-	if err := d.DialAndSend(m); err != nil {
-		return fmt.Errorf("could not send email: %v", err)
+	// Используйте контекст для отправки email.
+	done := make(chan error, 1)
+	go func() {
+		done <- d.DialAndSend(m)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-done:
+		if err != nil {
+			return fmt.Errorf("could not send email: %v", err)
+		}
+		return nil
 	}
-	return nil
 }

@@ -1,6 +1,7 @@
 package dispatcher
 
 import (
+	"context"
 	"email-sendler/internal/email"
 	"email-sendler/internal/queueTypes"
 	"fmt"
@@ -42,8 +43,7 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 		for {
 			select {
 			case <-stopChan:
-				close(messageChan)
-				close(errChan)
+				fmt.Println("Stopping queue reading")
 				return
 			default:
 				message, err := d.queue.Dequeue()
@@ -67,11 +67,16 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 		case message := <-messageChan:
 			fmt.Printf("Отправка сообщения: %+v\n", message)
 
-			if err := d.sender.Send(message.To, message.Subject, message.Body); err == nil {
+			// Создание контекста с таймаутом для отправки
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+			if err := d.sender.Send(ctx, message.To, message.Subject, message.Body); err == nil {
 				count++
 			} else {
 				fmt.Printf("%v. Error sending email: %v \n", op, err)
 			}
+
+			cancel() // Явный вызов cancel() после завершения работы с контекстом
 
 		case err := <-errChan:
 			fmt.Printf("%v. Error Dequeue message: %v \n", op, err)
