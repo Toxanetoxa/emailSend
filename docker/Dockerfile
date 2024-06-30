@@ -1,10 +1,5 @@
-FROM ubuntu:latest
-LABEL authors="antonsotnik"
-
-ENTRYPOINT ["top", "-b"]
-
-# Используем официальный образ Golang в качестве базового образа
-FROM golang:latest
+# Используем официальный образ Golang в качестве базового для сборки приложения
+FROM golang:latest AS builder
 
 # Устанавливаем рабочую директорию внутри контейнера
 WORKDIR /app
@@ -13,7 +8,20 @@ WORKDIR /app
 COPY . .
 
 # Собираем приложение
-RUN go build cmd/main.go
+RUN go build -o main cmd/main.go
+
+# Используем минимальный образ Ubuntu для финального контейнера
+FROM ubuntu:latest
+
+# Метаданные об авторах
+LABEL authors="antonsotnik"
+
+# Копируем собранное приложение из предыдущего этапа
+COPY --from=builder /app/main /app/main
+
+# Устанавливаем рабочую директорию внутри контейнера
+WORKDIR /app
 
 # Команда для запуска приложения при старте контейнера
 CMD ["./main"]
+
