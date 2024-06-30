@@ -7,13 +7,13 @@ services:
     ports:
       - "6379:6379"
 
-#  email-sender:
-#    build:
-#      context: ../
-#      dockerfile: docker/Dockerfile
-#    container_name: "sender"
-#    ports:
-#      - "8080:8080"
+  email-sender:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    container_name: "sender"
+    ports:
+      - "587:8080"
 
 networks:
   default:
