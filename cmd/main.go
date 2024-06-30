@@ -3,6 +3,7 @@ package main
 import (
 	"email-sendler/internal/dispatcher"
 	"email-sendler/internal/email"
+	"email-sendler/internal/emailLogger"
 	"email-sendler/internal/queue"
 	"email-sendler/internal/queueTypes"
 	"fmt"
@@ -14,9 +15,16 @@ import (
 )
 
 func main() {
-	err := godotenv.Load("../.env.prod")
+	logger, err := emailLogger.NewLogger("error.log")
 	if err != nil {
-		log.Fatalf("Error loading .env.prod file: %v", err)
+		log.Fatalf("Failed to create logger: %v", err)
+	}
+	defer logger.Close()
+
+	err = godotenv.Load("../.env.prod")
+	if err != nil {
+		//log.Fatalf("Error loading .env.prod file: %v", err)
+		logger.Error("main: Error loading .env.prod file: %v", err)
 	}
 
 	STMTHost := os.Getenv("STMT_HOST")
@@ -24,7 +32,8 @@ func main() {
 	STMTPassword := os.Getenv("STMT_PASSWORD")
 	STMTPort, err := strconv.Atoi(os.Getenv("STMT_PORT"))
 	if err != nil {
-		log.Fatalf("PORT must be an integer")
+		//log.Fatalf("PORT must be an integer")
+		logger.Error("main: PORT must be an integer", err)
 	}
 
 	sender := &email.SenderConf{
@@ -37,7 +46,8 @@ func main() {
 	// Создание очереди Redis
 	redisQue, err := CreateRedisQue()
 	if err != nil {
-		log.Fatalf("Error creating Redis queue: %v", err)
+		//log.Fatalf("Error creating Redis queue: %v", err)
+		logger.Error("main: Error creating Redis queue", err)
 		return
 	}
 
@@ -52,13 +62,13 @@ func main() {
 	for i := 0; i < 4; i++ {
 		err = redisQue.Enqueue(msg)
 		if err != nil {
-			log.Fatalf("Error enqueuing message: %v", err)
+			//log.Fatalf("Error enqueuing message: %v", err)
+			logger.Error("main: Error enqueuing message", err)
 			return
 		}
 	}
 
 	// Создание диспетчера который будет отправлять сообщения из очереди
-	// Реализация с редисом
 	emailDispatcher := dispatcher.NewEmailDispatcher(sender, redisQue, 10, time.Second)
 
 	// Канал для остановки диспетчера
@@ -72,18 +82,6 @@ func main() {
 
 	// Блокировка основного потока, чтобы программа не завершалась
 	select {}
-
-	// --- Проверка отправки сообщения ---
-	//err = sender.Send("toxanetoxa@gmail.com", "test 1", "Body 1")
-	//if err != nil {
-	//	log.Fatalf("Error sending email: %v", err)
-	//	return
-	//}
-
-	// ---Тестирование подключение, добавление, удаление сообщений из очереди ---
-	//testingQue.TestRedis()
-	//testingQue.TestKafka()
-	//testingQue.TestRabbitMQ()
 }
 
 func CreateRedisQue() (queueTypes.Queue, error) {
