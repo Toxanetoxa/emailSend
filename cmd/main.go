@@ -6,7 +6,6 @@ import (
 	"email-sendler/internal/emailLogger"
 	"email-sendler/internal/queue"
 	"email-sendler/internal/queueTypes"
-	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -111,6 +110,6 @@ func CreateRedisQue() (queueTypes.Queue, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Successfully created Redis queue: %s\n", redisConfig["key"])
+	log.Printf("Successfully created Redis queue: %s\n", redisConfig["key"])
 	return redisQueue, nil
 }

@@ -56,7 +56,7 @@ func main() {
 		log.Fatalf("Failed to authenticate: %v", err)
 	}
 
-	fmt.Println("Successfully connected and authenticated to the SMTP server")
+	log.Println("Successfully connected and authenticated to the SMTP server")
 
 	// Отправка тестового email
 	to := []string{"toxanetoxa@gmail.com"}
@@ -85,5 +85,5 @@ func main() {
 		log.Fatalf("Failed to write message: %v", err)
 	}
 
-	fmt.Println("Email sent successfully")
+	log.Println("Email sent successfully")
 }

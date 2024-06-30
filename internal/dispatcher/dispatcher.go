@@ -5,7 +5,7 @@ import (
 	"email-sendler/internal/email"
 	"email-sendler/internal/queueTypes"
 	"errors"
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -31,7 +31,7 @@ func NewEmailDispatcher(sender email.Sender, queue queueTypes.Queue, limit int, 
 func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 	const op = "EmailDispatcher.Start"
 
-	fmt.Println("Начало отправки")
+	log.Printf("Начало отправки")
 	ticker := time.NewTicker(d.interval)
 	defer ticker.Stop()
 	count := 0
@@ -44,7 +44,7 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 		for {
 			select {
 			case <-stopChan:
-				fmt.Println("Stopping queue reading")
+				log.Printf("Stopping queue reading")
 				return
 			default:
 				if d.queue.Len() == 0 {
@@ -66,12 +66,12 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 		select {
 		case <-ticker.C:
 			if count >= d.limit {
-				fmt.Println("Достигнут лимит отправки")
+				log.Printf("Достигнут лимит отправки")
 				return
 			}
 
 		case message := <-messageChan:
-			fmt.Printf("Отправка сообщения: %+v\n", message)
+			log.Printf("Отправка сообщения: %+v\n", message)
 
 			// Создание контекста с таймаутом для отправки
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -80,21 +80,21 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}) {
 				count++
 			} else {
 				if errors.Is(err, email.ErrInvalidRecipient) {
-					fmt.Printf("%v. Invalid recipient: %v\n", op, err)
+					log.Printf("%v. Invalid recipient: %v\n", op, err)
 				} else if errors.Is(err, email.ErrSendFailed) {
-					fmt.Printf("%v. Error sending email: %v\n", op, err)
+					log.Printf("%v. Error sending email: %v\n", op, err)
 				} else {
-					fmt.Printf("%v. Unknown error: %v\n", op, err)
+					log.Printf("%v. Unknown error: %v\n", op, err)
 				}
 			}
 
 			cancel()
 
 		case err := <-errChan:
-			fmt.Printf("%v. Error Dequeue message: %v \n", op, err)
+			log.Printf("%v. Error Dequeue message: %v \n", op, err)
 
 		case <-stopChan:
-			fmt.Println("Stopping dispatcher")
+			log.Printf("Stopping dispatcher")
 			return
 		}
 	}
