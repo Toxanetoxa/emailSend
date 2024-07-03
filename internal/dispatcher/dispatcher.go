@@ -3,7 +3,7 @@ package dispatcher
 import (
 	"context"
 	"email-sendler/internal/email"
-	"email-sendler/internal/queueTypes"
+	"email-sendler/internal/redis"
 	"errors"
 	"log"
 	"time"
@@ -12,13 +12,13 @@ import (
 // EmailDispatcher отвечает за отправку real email из очереди.
 type EmailDispatcher struct {
 	sender   email.Sender
-	queue    queueTypes.Queue
+	queue    *redis.Queue
 	limit    int
 	interval time.Duration
 }
 
 // NewEmailDispatcher создает новый EmailDispatcher.
-func NewEmailDispatcher(sender email.Sender, queue queueTypes.Queue, limit int, interval time.Duration) *EmailDispatcher {
+func NewEmailDispatcher(sender email.Sender, queue *redis.Queue, limit int, interval time.Duration) *EmailDispatcher {
 	return &EmailDispatcher{
 		sender:   sender,
 		queue:    queue,
