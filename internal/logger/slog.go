@@ -1,4 +1,4 @@
-package emailLogger
+package logger
 
 import (
 	"fmt"

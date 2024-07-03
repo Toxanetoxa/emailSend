@@ -3,7 +3,7 @@ package main
 import (
 	"email-sendler/internal/dispatcher"
 	"email-sendler/internal/email"
-	"email-sendler/internal/emailLogger"
+	"email-sendler/internal/logger"
 	"email-sendler/internal/redis"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -47,7 +47,7 @@ func initSenderConf() (error, *email.SenderConf, string) {
 }
 
 // initLogger метод который инициализация логер для сервиса
-func initLogger() (error, *emailLogger.LoggerFile, string) {
+func initLogger() (error, *logger.LoggerFile, string) {
 	const op = "main.initLogger"
 
 	err := godotenv.Load("../.env.prod")
@@ -55,7 +55,7 @@ func initLogger() (error, *emailLogger.LoggerFile, string) {
 		return err, nil, op
 	}
 	LoggerFile := os.Getenv("LOGGER_FILE")
-	logger, err := emailLogger.NewLogger(LoggerFile)
+	logger, err := logger.NewLogger(LoggerFile)
 	if err != nil {
 		return err, nil, op
 	}
