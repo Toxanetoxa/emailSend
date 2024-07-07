@@ -16,6 +16,40 @@ import (
 	"time"
 )
 
+type HTTPServer interface {
+	GetAddr() string
+	GetTimeout() time.Duration
+	GetIdleTimeout() time.Duration
+	GetHandler() *chi.Mux
+}
+
+type ServerConfig struct {
+	Timeout     time.Duration
+	IdleTimeout time.Duration
+	Handler     *chi.Mux
+}
+
+type Address struct {
+	Host string
+	Port string
+}
+
+func (r *Address) GetAddr() string {
+	return fmt.Sprintf("%s:%s", r.Host, r.Port)
+}
+
+func (r *ServerConfig) GetHandler() *chi.Mux {
+	return r.Handler
+}
+
+func (r *ServerConfig) GetTimeout() time.Duration {
+	return r.Timeout
+}
+
+func (r *ServerConfig) GetIdleTimeout() time.Duration {
+	return r.IdleTimeout
+}
+
 // initSenderConf метод который инициализация конфиг для сервиса STMT
 func initSenderConf() (error, *email.SenderConf, string) {
 	const op = "main.initSenderConf"
@@ -47,7 +81,7 @@ func initSenderConf() (error, *email.SenderConf, string) {
 }
 
 // initLogger метод который инициализация логер для сервиса
-func initLogger() (error, *logger.LoggerFile, string) {
+func initLogger() (error, *logger.File, string) {
 	const op = "main.initLogger"
 
 	err := godotenv.Load("../.env.prod")
@@ -55,21 +89,32 @@ func initLogger() (error, *logger.LoggerFile, string) {
 		return err, nil, op
 	}
 	LoggerFile := os.Getenv("LOGGER_FILE")
-	logger, err := logger.NewLogger(LoggerFile)
+	l, err := logger.NewLogger(LoggerFile)
 	if err != nil {
 		return err, nil, op
 	}
 
-	return nil, logger, op
+	return nil, l, op
 }
 
-// initServer метод который инициализация сервера
-func initServer() (error, *chi.Mux, string) {
-	const op = "main.initServer"
+// initRouter метод который инициализирует роутер
+func initRouter() (error, *chi.Mux, string) {
+	const op = "main.initRouter"
 
-	var err error
-	var PORT string
 	var router *chi.Mux
+
+	router = chi.NewRouter()
+
+	return nil, router, op
+}
+
+// initServer метод который инициализирует сервера
+func initServer(router *chi.Mux) (error, *http.Server, string) {
+	const op = "main.initServer"
+	var HOST, PORT string
+	var TIMEOUT, IdleTimeout time.Duration
+	var err error
+	var srvConf *ServerConfig
 
 	err = godotenv.Load("../.env.prod")
 	if err != nil {
@@ -77,19 +122,36 @@ func initServer() (error, *chi.Mux, string) {
 	}
 
 	PORT = os.Getenv("SERVER_PORT")
+	HOST = os.Getenv("SERVER_HOST")
+	TIMEOUT, err = time.ParseDuration(os.Getenv("SERVER_TIMEOUT"))
+	if err != nil {
+		return err, nil, op
+	}
+	IdleTimeout, err = time.ParseDuration(os.Getenv("SERVER_IDLE_TIMEOUT"))
+	if err != nil {
+		return err, nil, op
+	}
 
-	router = chi.NewRouter()
-	// запуск сервера
-	go func() {
-		err := http.ListenAndServe(fmt.Sprint(":", PORT), router)
-		if err != nil {
-			log.Printf("Error starting server: %v", err)
-			return // если сервер не запустился, то программа завершается
-		}
-	}()
+	address := &Address{
+		Host: HOST,
+		Port: PORT,
+	}
 
-	fmt.Printf("Server started on port %s\n", PORT)
-	return nil, router, op
+	srvConf = &ServerConfig{
+		Timeout:     TIMEOUT,
+		IdleTimeout: IdleTimeout,
+		Handler:     router,
+	}
+
+	srv := &http.Server{
+		Addr:         address.GetAddr(),
+		Handler:      srvConf.GetHandler(),
+		ReadTimeout:  srvConf.GetTimeout(),
+		WriteTimeout: srvConf.GetTimeout(),
+		IdleTimeout:  srvConf.GetIdleTimeout(),
+	}
+
+	return nil, srv, op
 }
 
 // initRedisQue метод который инициализация очередь Redis
@@ -135,17 +197,17 @@ func initRedisQue() (string, error, *redis.Queue) {
 func main() {
 	var op string
 	// Инициализация логера
-	err, logger, op := initLogger()
+	err, emailLogger, op := initLogger()
 	if err != nil {
 		log.Fatalf(op, err)
 	}
-	defer logger.Close()
+	defer emailLogger.Close()
 
-	// Инициализация сервера
+	// Инициализация роутера
 	var router *chi.Mux
-	err, router, op = initServer()
+	err, router, op = initRouter()
 	if err != nil {
-		logger.Error(op, err)
+		emailLogger.Error(op, err)
 		return
 	}
 
@@ -157,11 +219,30 @@ func main() {
 	// Инициализация обработчиков
 	router.Route("/api", func(r chi.Router) {})
 
-	// Иницализация конфига
+	// Инициализация сервера
+	var srv *http.Server
+
+	err, srv, op = initServer(router)
+	if err != nil {
+		emailLogger.Error(op, err)
+		return
+	}
+
+	// Запуск сервера
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Fatalf("%s: Error starting server: %v", op, err)
+			return
+		}
+	}()
+
+	emailLogger.Success(op, "Server started")
+
+	// Иницализация конфига sender
 	var sender *email.SenderConf
 	err, sender, op = initSenderConf()
 	if err != nil {
-		logger.Error(op, err)
+		emailLogger.Error(op, err)
 		return
 	}
 
@@ -169,26 +250,11 @@ func main() {
 	var redisQue *redis.Queue
 	op, err, redisQue = initRedisQue()
 	if err != nil {
-		logger.Error(op, err)
+		emailLogger.Error(op, err)
 		return
 	}
 
 	// TODO сделать ручку для принятия сообщений которые нужно отправить
-	//////--- тестовое сообщение ---
-	//msg := email.Message{
-	//	To:      "toxanetoxa@gmail.",
-	//	Subject: "Test1 Subject",
-	//	Body:    "Test sdfsafdsfsdfdsfsdfdsf",
-	//}
-	//// ---- Добавление тестового сообщения в очередь Redis---
-	//for i := 0; i < 4; i++ {
-	//	err = redisQue.Enqueue(msg)
-	//	if err != nil {
-	//		//log.Fatalf("Error enqueuing message: %v", err)
-	//		logger.Error("main: Error enqueuing message", err)
-	//		return
-	//	}
-	//}
 
 	// Создание диспетчера который будет отправлять сообщения из очереди
 	emailDispatcher := dispatcher.NewEmailDispatcher(sender, redisQue, 10, time.Second)

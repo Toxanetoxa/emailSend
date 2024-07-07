@@ -1,5 +1,6 @@
 # Ignore .env.prod
 .env.prod
+.env
 
 # Ignore log files
 *.log
