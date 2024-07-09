@@ -66,6 +66,19 @@ func (l *File) Success(methodName string, message string) {
 	}
 }
 
+func (l *File) Info(methodName string, message string) {
+	_, printErr := color.New(color.FgBlue).Printf("[INFO] %s - %s: %s\n", time.Now().Format(time.RFC3339), methodName, message)
+	if printErr != nil {
+		return
+	}
+	if fileErr := l.logToFile("INFO", methodName, message); fileErr != nil {
+		_, err := color.New(color.FgRed).Printf("[ERROR] Failed to write to log file: %s\n", fileErr.Error())
+		if err != nil {
+			return
+		}
+	}
+}
+
 func (l *File) Close() {
 	err := l.file.Close()
 	if err != nil {
