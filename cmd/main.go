@@ -85,12 +85,15 @@ func initSenderConf() (error, *email.SenderConf, string) {
 func initLogger() (error, *logger.File, string) {
 	const op = "main.initLogger"
 
-	err := godotenv.Load("../.env.prod")
+	var err error
+	var l *logger.File
+
+	err = godotenv.Load("../.env.prod")
 	if err != nil {
 		return err, nil, op
 	}
 	LoggerFile := os.Getenv("LOGGER_FILE")
-	l, err := logger.NewLogger(LoggerFile)
+	l, err = logger.NewLogger(LoggerFile)
 	if err != nil {
 		return err, nil, op
 	}

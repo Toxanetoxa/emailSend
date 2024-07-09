@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . .
 
 # Собираем приложение
-RUN go build -o main cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o cmd/main cmd/main.go
 
 # Используем минимальный образ Ubuntu для финального контейнера
 FROM ubuntu:latest
@@ -17,11 +17,10 @@ FROM ubuntu:latest
 LABEL authors="antonsotnik"
 
 # Копируем собранное приложение из предыдущего этапа
-COPY --from=builder /app/main /app/main
+COPY --from=builder /app /app
 
 # Устанавливаем рабочую директорию внутри контейнера
 WORKDIR /app
 
 # Команда для запуска приложения при старте контейнера
-CMD ["./main"]
-
+CMD ["sh", "-c", "cd cmd && ./main"]

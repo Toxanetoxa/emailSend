@@ -9,15 +9,20 @@ services:
 
   email-sender:
     build:
-      context: ../
-      dockerfile: docker/Dockerfile
+      context: ./
+      dockerfile: ./Dockerfile
     container_name: "sender"
     ports:
+#      - "8085:8085"
       - "${SERVER_PORT}:${SERVER_PORT}"
     environment:
       - SERVER_PORT=${SERVER_PORT}
+    env_file:
+        - ./.env.prod
 
 networks:
   default:
     name: email-sender
     external: true
+
+x-docker-project-name: email-sender
