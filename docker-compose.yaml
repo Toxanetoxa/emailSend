@@ -6,6 +6,11 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+#      - REDIS_PORT=${REDIS_PORT}
+    environment:
+      - REDIS_PORT=${REDIS_PORT}e
+    env_file:
+      - ./.env.prod
 
   email-sender:
     build:
@@ -13,16 +18,15 @@ services:
       dockerfile: ./Dockerfile
     container_name: "sender"
     ports:
-#      - "8085:8085"
-      - "${SERVER_PORT}:${SERVER_PORT}"
+      - "3000:3000"
+#      - "${SERVER_PORT}:${SERVER_PORT}"
     environment:
       - SERVER_PORT=${SERVER_PORT}
     env_file:
-        - ./.env.prod
+      - ./.env.prod
 
 networks:
-  default:
-    name: email-sender
+  email-sender:
     external: true
 
 x-docker-project-name: email-sender
