@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"email-sendler/internal/email"
+	"email-sendler/internal/logger"
 	"email-sendler/internal/redis"
 	"errors"
 	"log"
@@ -28,10 +29,10 @@ func NewEmailDispatcher(sender email.Sender, queue *redis.Queue, limit int, inte
 }
 
 // Start запускает процесс отправки email.
-func (d *EmailDispatcher) Start(stopChan chan struct{}) {
+func (d *EmailDispatcher) Start(stopChan chan struct{}, logger *logger.File) {
 	const op = "EmailDispatcher.Start"
 
-	log.Printf("Начало отправки")
+	logger.Success(op, "Начало отправки сообщений")
 	ticker := time.NewTicker(d.interval)
 	defer ticker.Stop()
 	count := 0

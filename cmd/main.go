@@ -3,6 +3,7 @@ package main
 import (
 	"email-sendler/internal/dispatcher"
 	"email-sendler/internal/email"
+	"email-sendler/internal/http-server/handler"
 	"email-sendler/internal/logger"
 	"email-sendler/internal/redis"
 	"fmt"
@@ -216,9 +217,6 @@ func main() {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
 
-	// Инициализация обработчиков
-	router.Route("/api", func(r chi.Router) {})
-
 	// Инициализация сервера
 	var srv *http.Server
 
@@ -255,13 +253,19 @@ func main() {
 	}
 
 	// TODO сделать ручку для принятия сообщений которые нужно отправить
+	// Инициализация обработчиков
+	router.Route("/api",
+		func(r chi.Router) {
+			r.Post("/send", handler.New(emailLogger, redisQue))
+		},
+	)
 
 	// Создание диспетчера который будет отправлять сообщения из очереди
 	emailDispatcher := dispatcher.NewEmailDispatcher(sender, redisQue, 10, time.Second)
 
 	// Канал для остановки диспетчера
 	stopChan := make(chan struct{})
-	go emailDispatcher.Start(stopChan)
+	go emailDispatcher.Start(stopChan, emailLogger)
 	// Пример остановки диспетчера через 10 секунд
 	go func() {
 		time.Sleep(10 * time.Second)

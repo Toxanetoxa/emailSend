@@ -1,24 +1,20 @@
 package handler
 
 import (
+	"email-sendler/internal/email"
 	resp "email-sendler/internal/libs/api"
 	"email-sendler/internal/logger"
 	"email-sendler/internal/redis"
 	"errors"
+	"fmt"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"io"
 	"net/http"
 )
 
-type Message struct {
-	To      string `json:"to" validate:"required,email"`
-	Subject string `json:"subject"`
-	Body    string `json:"body"`
-}
-
 type Request struct {
-	Messages []Message `json:"messages"`
+	Messages []email.Message `json:"messages"`
 }
 
 type Response struct {
@@ -46,14 +42,29 @@ func New(logger *logger.File, que *redis.Queue) http.HandlerFunc {
 			return
 		}
 
-		//responseOK(w, r, validEmails)
+		logger.Info(op, fmt.Sprint("Success request: ", req))
+
+		for _, msg := range req.Messages {
+			err := que.Enqueue(msg)
+			if err != nil {
+				logger.Error(op, fmt.Errorf("failed to enqueue message: %v", err))
+				responseErr(w, r, http.StatusInternalServerError, "Failed to enqueue message")
+				return
+			}
+		}
+
+		logger.Info(op, fmt.Sprint("Success Enqueue", req.Messages, "in redis"))
+
+		var validEmails []string
+
+		responseOK(w, r, validEmails)
 	}
 }
 
 func responseOK(w http.ResponseWriter, r *http.Request, emails []string) {
 	render.JSON(w, r, Response{
 		Response: resp.OK(),
-		Emails:   emails,
+		//Emails:   emails,
 	})
 }
 
