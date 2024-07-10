@@ -4,6 +4,7 @@ import (
 	"context"
 	"email-sendler/internal/email"
 	"fmt"
+
 	"github.com/go-redis/redis/v8"
 )
 

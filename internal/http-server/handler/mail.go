@@ -7,10 +7,11 @@ import (
 	"email-sendler/internal/redis"
 	"errors"
 	"fmt"
-	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
 	"io"
 	"net/http"
+
+	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
 )
 
 type Request struct {

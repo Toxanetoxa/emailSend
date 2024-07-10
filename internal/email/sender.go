@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/gomail.v2"
 	"net/mail"
+
+	"gopkg.in/gomail.v2"
 )
 
 // Определение базовых ошибок
