@@ -160,11 +160,16 @@ func initServer(router *chi.Mux) (error, *http.Server, string) {
 
 // initRedisQue метод который инициализация очередь Redis
 func initRedisQue() (string, error, *redis.Queue) {
-	const op = "main.SendRedisQue"
+	const op = "main.initRedisQue"
 
 	var RedisPort, RedisDB int
 	var RedisHost, RedisPassword, RedisKey string
 	var err error
+
+	err = godotenv.Load("../.env.prod")
+	if err != nil {
+		return op, err, nil
+	}
 
 	RedisHost = os.Getenv("REDIS_HOST")
 	RedisPassword = os.Getenv("REDIS_PASSWORD")
@@ -237,7 +242,7 @@ func main() {
 		}
 	}()
 
-	emailLogger.Success(op, "Server started")
+	emailLogger.Info(op, "Server started")
 
 	// Иницализация конфига sender
 	var sender *email.SenderConf
