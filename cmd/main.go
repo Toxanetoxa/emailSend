@@ -10,7 +10,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -246,8 +248,8 @@ func main() {
 	emailLogger.Info(op, "Server started")
 
 	// Иницализация конфига sender
-	var sender *email.SenderConf
-	err, sender, op = initSenderConf()
+	var senderConf *email.SenderConf
+	err, senderConf, op = initSenderConf()
 	if err != nil {
 		emailLogger.Error(op, err)
 		return
@@ -270,17 +272,21 @@ func main() {
 	)
 
 	// Создание диспетчера который будет отправлять сообщения из очереди
-	emailDispatcher := dispatcher.NewEmailDispatcher(sender, redisQue, 10, time.Second)
+	emailDispatcher := dispatcher.NewEmailDispatcher(senderConf, redisQue, 10, time.Second)
 
 	// Канал для остановки диспетчера
 	stopChan := make(chan struct{})
-	go emailDispatcher.Start(stopChan, emailLogger)
+
 	// Пример остановки диспетчера через 10 секунд
 	go func() {
-		time.Sleep(10 * time.Second)
-		close(stopChan)
+		emailDispatcher.Start(stopChan, emailLogger)
 	}()
 
-	// Блокировка основного потока, чтобы программа не завершалась
-	select {}
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+
+	close(stopChan)
+
+	os.Exit(0)
 }

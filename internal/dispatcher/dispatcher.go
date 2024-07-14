@@ -12,14 +12,14 @@ import (
 
 // EmailDispatcher отвечает за отправку real email из очереди.
 type EmailDispatcher struct {
-	sender   email.Sender
+	sender   *email.SenderConf
 	queue    *redis.Queue
 	limit    int
 	interval time.Duration
 }
 
 // NewEmailDispatcher создает новый EmailDispatcher.
-func NewEmailDispatcher(sender email.Sender, queue *redis.Queue, limit int, interval time.Duration) *EmailDispatcher {
+func NewEmailDispatcher(sender *email.SenderConf, queue *redis.Queue, limit int, interval time.Duration) *EmailDispatcher {
 	return &EmailDispatcher{
 		sender:   sender,
 		queue:    queue,
@@ -77,7 +77,7 @@ func (d *EmailDispatcher) Start(stopChan chan struct{}, logger *logger.File) {
 			// Создание контекста с таймаутом для отправки
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
-			if err := d.sender.Send(ctx, message.To, message.Subject, message.Body); err == nil {
+			if err := d.sender.Send(ctx, message.To, message.Subject, message.Body, logger); err == nil {
 				count++
 			} else {
 				if errors.Is(err, email.ErrInvalidRecipient) {

@@ -62,9 +62,11 @@ func Deserialize(data []byte) (*Message, error) {
 }
 
 // Send метод отправления email.
-func (r *SenderConf) Send(ctx context.Context, to string, subject string, body string) error {
+func (r *SenderConf) Send(ctx context.Context, to string, subject string, body string) (error, string) {
+	const op = "email.Send"
+
 	if !isValidEmail(to) {
-		return NewInvalidRecipientError(to)
+		return NewInvalidRecipientError(to), op
 	}
 
 	m := gomail.NewMessage()
@@ -75,21 +77,18 @@ func (r *SenderConf) Send(ctx context.Context, to string, subject string, body s
 
 	d := gomail.NewDialer(r.Host, r.Port, r.Username, r.Password)
 
-	// Используйте контекст для отправки email.
-	done := make(chan error, 1)
 	go func() {
-		done <- d.DialAndSend(m)
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf(ctx.Err()), op
+		default:
+			if err := d.DialAndSend(m); err != nil {
+				return NewSendFailedError(), op
+			}
+		}
 	}()
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-done:
-		if err != nil {
-			return NewSendFailedError(err)
-		}
-		return nil
-	}
+	return nil, op
 }
 
 // isValidEmail Валидация email
