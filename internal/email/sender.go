@@ -5,32 +5,33 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/gomail.v2"
 	"net/mail"
+
+	"gopkg.in/gomail.v2"
 )
 
-// Определение базовых ошибок
+// Errors
 var (
 	ErrInvalidRecipient = errors.New("invalid recipient address")
 	ErrSendFailed       = errors.New("failed to send email")
 )
 
-// NewInvalidRecipientError Функция для создания ошибок с дополнительным контекстом
+// NewInvalidRecipientError creates a new InvalidRecipientError
 func NewInvalidRecipientError(recipient string) error {
 	return fmt.Errorf("%w: %s", ErrInvalidRecipient, recipient)
 }
 
-// NewSendFailedError Функция для создания ошибок с дополнительным контекстом
+// NewSendFailedError creates a new SendFailedError
 func NewSendFailedError(err error) error {
 	return fmt.Errorf("%w: %v", ErrSendFailed, err)
 }
 
-// Sender представляет интерфейс для отправки email.
+// Sender represents an email sender interface
 type Sender interface {
 	Send(ctx context.Context, to string, subject string, body string) error
 }
 
-// SenderConf представляет реальный интерфейс для отправки email.
+// SenderConf represents the configuration for sending emails
 type SenderConf struct {
 	Host     string
 	Port     int
@@ -38,19 +39,19 @@ type SenderConf struct {
 	Password string
 }
 
-// Message представляет структуру email сообщения.
+// Message represents an email message
 type Message struct {
 	To      string `json:"to"`
 	Subject string `json:"subject"`
 	Body    string `json:"body"`
 }
 
-// Serialize сериализует сообщение в JSON.
+// Serialize serializes the message to JSON
 func (m *Message) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-// Deserialize десериализует JSON в сообщение.
+// Deserialize deserializes JSON to a message
 func Deserialize(data []byte) (*Message, error) {
 	var msg Message
 	err := json.Unmarshal(data, &msg)
@@ -60,8 +61,10 @@ func Deserialize(data []byte) (*Message, error) {
 	return &msg, nil
 }
 
-// Send метод отправления email.
+// Send sends an email
 func (r *SenderConf) Send(ctx context.Context, to string, subject string, body string) error {
+	const op = "email.Send"
+
 	if !isValidEmail(to) {
 		return NewInvalidRecipientError(to)
 	}
@@ -74,24 +77,14 @@ func (r *SenderConf) Send(ctx context.Context, to string, subject string, body s
 
 	d := gomail.NewDialer(r.Host, r.Port, r.Username, r.Password)
 
-	// Используйте контекст для отправки email.
-	done := make(chan error, 1)
-	go func() {
-		done <- d.DialAndSend(m)
-	}()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-done:
-		if err != nil {
-			return NewSendFailedError(err)
-		}
-		return nil
+	err := d.DialAndSend(m)
+	if err != nil {
+		return NewSendFailedError(err)
 	}
+	return nil
 }
 
-// isValidEmail Валидация email
+// isValidEmail validates an email address
 func isValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil

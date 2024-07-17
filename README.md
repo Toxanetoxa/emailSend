@@ -45,40 +45,6 @@ type Message struct {
 }
 ````
 
-#### Интерфейс для отправки email
-```go
-package email
-
-type Sender interface {
-    Send(to string, subject string, body string) error
-}
-```
-
-#### Интерфейс для работы с очередью
-```go
-package queue
-
-type QueueType int
-
-const (
-	RedisQueueType QueueType = iota
-	KafkaQueueType
-	RabbitMQQueueType
-)
-```
-#### Создание очереди через фабрику
-```go
-package main
-
- import "email-sendler/internal/queue"
-
-func main()  {
-	factory := &queue.Factory{}
-	redisQueue, err := factory.CreateQueue(queue.RedisQueueType, redisConfig)
-	if err != nil {...}
-}
-```
-
 ### TODO:
 1. Отправка сообщений происходит по таймеру. Приложению нужно отправлять письмо как только оно появилось в очереди, не дожидаясь таймеров.
    Использовать таймер для отслеживания лимита. +

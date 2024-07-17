@@ -3,7 +3,8 @@ package dispatcher
 import (
 	"context"
 	"email-sendler/internal/email"
-	"email-sendler/internal/queueTypes"
+	"email-sendler/internal/logger"
+	"email-sendler/internal/redis"
 	"errors"
 	"log"
 	"time"
@@ -12,13 +13,13 @@ import (
 // EmailDispatcher отвечает за отправку real email из очереди.
 type EmailDispatcher struct {
 	sender   email.Sender
-	queue    queueTypes.Queue
+	queue    redis.QueueInterface
 	limit    int
 	interval time.Duration
 }
 
 // NewEmailDispatcher создает новый EmailDispatcher.
-func NewEmailDispatcher(sender email.Sender, queue queueTypes.Queue, limit int, interval time.Duration) *EmailDispatcher {
+func NewEmailDispatcher(sender email.Sender, queue redis.QueueInterface, limit int, interval time.Duration) *EmailDispatcher {
 	return &EmailDispatcher{
 		sender:   sender,
 		queue:    queue,
@@ -28,10 +29,10 @@ func NewEmailDispatcher(sender email.Sender, queue queueTypes.Queue, limit int, 
 }
 
 // Start запускает процесс отправки email.
-func (d *EmailDispatcher) Start(stopChan chan struct{}) {
+func (d *EmailDispatcher) Start(stopChan chan struct{}, logger *logger.File) {
 	const op = "EmailDispatcher.Start"
 
-	log.Printf("Начало отправки")
+	logger.Success(op, "Начало отправки сообщений")
 	ticker := time.NewTicker(d.interval)
 	defer ticker.Stop()
 	count := 0
