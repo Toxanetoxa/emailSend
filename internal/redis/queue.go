@@ -14,6 +14,12 @@ type Queue struct {
 	Key    string
 }
 
+type QueueInterface interface {
+	Len() int
+	Dequeue() (email.Message, error)
+	Enqueue(message email.Message) error
+}
+
 // Config интерфейс для Redis
 type Config interface {
 	GetAddr() string
@@ -95,3 +101,6 @@ func (q *Queue) Len() int {
 	}
 	return int(l)
 }
+
+// Ensure Queue implements Queue
+var _ QueueInterface = (*Queue)(nil)

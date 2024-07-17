@@ -108,9 +108,7 @@ func initLogger() (error, *logger.File, string) {
 func initRouter() (error, *chi.Mux, string) {
 	const op = "main.initRouter"
 
-	var router *chi.Mux
-
-	router = chi.NewRouter()
+	router := chi.NewRouter()
 
 	return nil, router, op
 }
